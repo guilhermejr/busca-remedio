@@ -1,0 +1,23 @@
+{
+    "name": "guilhermejr/busca-remedio",
+    "description": "Busca informações de um remédio",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^6.3",
+        "symfony/dom-crawler": "^4.3",
+        "symfony/css-selector": "^4.3"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Guilherme Jr.",
+            "email": "falecom@guilhermejr.net"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "BuscaRemedio\\" : "src/"
+        }
+    },
+    "bin": ["buscar-remedio"]
+}

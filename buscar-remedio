@@ -1,0 +1,57 @@
+#!/usr/bin/env php
+<?php
+
+// --- Mensagem de erro parâmetros ---
+function mensagemErroParametros($argv) 
+{
+    echo PHP_EOL;
+    echo "Uso: ". $argv[0] ." [formato] [codigoDeBarra]" . PHP_EOL . PHP_EOL;
+    echo "formato          Poder ser json ou array" . PHP_EOL;
+    echo "codigoDeBarra    Deve ser uma sequência de 13 digitos" . PHP_EOL . PHP_EOL;
+    echo "Exemplo: ". $argv[0] ." array 7895296211215" . PHP_EOL;
+    echo PHP_EOL;
+    exit();
+}
+
+// --- Mensagem de erro codigoDeBarra ---
+function mensagemErrocodigoDeBarra() 
+{
+    echo "Formato do codigoDeBarra inválido. Deve ter 13 dígitos" . PHP_EOL;
+    exit();
+}
+
+// --- Verifica se o ambiente que está rodando é o cli ---
+if (PHP_SAPI !== "cli") {
+    echo "Aviso: Este script deve ser rodado a via console." . PHP_EOL;
+}
+
+// --- Verifica se a quantidade de argumentos está correta ---
+if ($argc != 3) {
+    mensagemErroParametros($argv);
+}
+
+// --- Verifica se o primeiro parâmetro é válido ---
+if ($argv[1] != "array" && $argv[1] != "json") {
+    mensagemErroParametros($argv);
+}
+
+// --- Verifica quantidade de caracteres do isbn ---
+if (strlen($argv[2]) != 13) {
+    mensagemErrocodigoDeBarra();
+} 
+
+// --- Verifica se é formado só por digitos ---
+if (!preg_match("/\d{13}/", $argv[2])) {
+    mensagemErrocodigoDeBarra();
+}
+
+require 'vendor/autoload.php';
+
+use BuscaRemedio\Buscador;
+
+$buscador = new Buscador($argv[2]);
+if ($argv[1] == "json") {
+    print_r($buscador->getJSON(true));
+} else {
+    print_r($buscador->getArray());
+}
