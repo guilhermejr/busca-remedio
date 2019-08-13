@@ -1,8 +1,11 @@
 {
     "name": "guilhermejr/busca-remedio",
     "description": "Busca informações de um remédio",
+    "homepage": "https://github.com/guilhermejr/buscar-remedio",
     "type": "library",
     "require": {
+        "php": "^7.3",
+        "lib-libxml": "^2.9.9",
         "guzzlehttp/guzzle": "^6.3",
         "symfony/dom-crawler": "^4.3",
         "symfony/css-selector": "^4.3"
