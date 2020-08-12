@@ -99,8 +99,8 @@ class Buscador
 
     private function getNome() 
     {
-        if ($this->crawler->filter('.new-product-header__product-infos__title')->eq(0)->count()) {
-            return strip_tags(trim($this->crawler->filter('.new-product-header__product-infos__title')->eq(0)->html()));
+        if ($this->crawler->filter('.product-presentation__option-description')->eq(0)->count()) {
+            return strip_tags(trim($this->crawler->filter('.product-presentation__option-description')->eq(0)->html()));
         }
         return null;
     }
