@@ -4,7 +4,7 @@ Busca informações de um remédio
 
 ## Dependência
 
-* PHP 7.3+
+* PHP 7.4+
 * php-xml
 
 ## Instalação

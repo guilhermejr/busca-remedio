@@ -2,7 +2,8 @@
 
 namespace BuscaRemedio;
 
-use GuzzleHttp\Client;
+use Symfony\Component\BrowserKit\HttpBrowser;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\DomCrawler\Crawler;
 
 class Buscador
@@ -13,17 +14,14 @@ class Buscador
     public function __construct(string $codigoBarra)
     {
         try {
-            $client = new Client();
-            $this->crawler = new Crawler();
-    
-            $response = $client->request('GET', 'https://consultaremedios.com.br/busca', [
-                'form_params' => [
-                    'termo' => $codigoBarra
-                ]
-            ]);
+            $browser = new HttpBrowser(HttpClient::create());
+            $this->crawler = $browser->request('GET', 'https://consultaremedios.com.br');
+            $form = $this->crawler->filter('.search-autocomplete__form')->form(); 
+            $form['termo'] = $codigoBarra;
             
-            $html = $response->getBody();
-            $this->crawler->addHtmlContent($html);
+            // submits the given form
+            $this->crawler = $browser->submit($form);
+ 
         } catch (\Exception $e) {
             $this->erro = true;
         }
@@ -101,8 +99,8 @@ class Buscador
 
     private function getNome() 
     {
-        if ($this->crawler->filter('h2.presentation-offer-info__description > a')->eq(0)->count()) {
-            return strip_tags(trim($this->crawler->filter('h2.presentation-offer-info__description > a')->eq(0)->html()));
+        if ($this->crawler->filter('.new-product-header__product-infos__title')->eq(0)->count()) {
+            return strip_tags(trim($this->crawler->filter('.new-product-header__product-infos__title')->eq(0)->html()));
         }
         return null;
     }
