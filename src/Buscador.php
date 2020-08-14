@@ -51,6 +51,10 @@ class Buscador
             $remedio['contraIndicacao'] = $this->getContraIndicacao();
             $remedio['reacoesAdversas'] = $this->getReacoesAdversas();
             $remedio['armazenagem'] = $this->getArmazenagem();
+
+            if (is_null($remedio['nome'])) {
+                $remedio['retorno'] = true;
+            }
         }
         
         return $remedio;
