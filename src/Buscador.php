@@ -8,18 +8,21 @@ use Symfony\Component\DomCrawler\Crawler;
 
 class Buscador
 {
-    private $crawler;
+
+    private $crawlerRemedio;
+    private $crawlerBula;
     private $erro = false;
 
     public function __construct(string $codigoBarra)
     {
         try {
-            $browser = new HttpBrowser(HttpClient::create());
-            $this->crawler = $browser->request('GET', 'https://consultaremedios.com.br');
-            $form = $this->crawler->filter('.search-autocomplete__form')->form(); 
-            $form['termo'] = $codigoBarra;
             
-            $this->crawler = $browser->submit($form);
+            $browser = new HttpBrowser(HttpClient::create());
+            $this->crawlerRemedio = $browser->request('GET', 'https://consultaremedios.com.br');
+            $form = $this->crawlerRemedio->filter('.search-autocomplete__form')->form(); 
+            $form['termo'] = $codigoBarra;
+            $this->crawlerRemedio = $browser->submit($form);
+            $this->crawlerBula = $browser->request('GET', substr($this->crawlerRemedio->getUri(), 0, -1) . 'bula');
  
         } catch (\Exception $e) {
             $this->erro = true;
@@ -50,6 +53,7 @@ class Buscador
             $remedio['contraIndicacao'] = $this->getContraIndicacao();
             $remedio['reacoesAdversas'] = $this->getReacoesAdversas();
             $remedio['armazenagem'] = $this->getArmazenagem();
+            $remedio['bula'] = $this->getBula();
 
             if (is_null($remedio['nome'])) {
                 $remedio['retorno'] = false;
@@ -62,48 +66,56 @@ class Buscador
 
     private function getArmazenagem() 
     {
-        if ($this->crawler->filter('#storage_care-collapse')->eq(0)->count()) {
-            return trim($this->crawler->filter('#storage_care-collapse')->eq(0)->html());
+        if ($this->crawlerRemedio->filter('#storage_care-collapse')->count()) {
+            return trim($this->crawlerRemedio->filter('#storage_care-collapse')->html());
         }
         return null;
     }
 
     private function getReacoesAdversas() 
     {
-        if ($this->crawler->filter('#adverse_reactions-collapse > div')->eq(0)->count()) {
-            return trim($this->crawler->filter('#adverse_reactions-collapse > div')->eq(0)->html());
+        if ($this->crawlerRemedio->filter('#adverse_reactions-collapse > div')->count()) {
+            return trim($this->crawlerRemedio->filter('#adverse_reactions-collapse > div')->html());
         }
         return null;
     }
 
     private function getContraIndicacao() 
     {
-        if ($this->crawler->filter('#contraindication-collapse > div')->eq(0)->count()) {
-            return trim($this->crawler->filter('#contraindication-collapse > div')->eq(0)->html());
+        if ($this->crawlerRemedio->filter('#contraindication-collapse > div')->count()) {
+            return trim($this->crawlerRemedio->filter('#contraindication-collapse > div')->html());
         }
         return null;
     }
 
     private function getComoUsar() 
     {
-        if ($this->crawler->filter('#dosage-collapse > div')->eq(0)->count()) {
-            return trim($this->crawler->filter('#dosage-collapse > div')->eq(0)->html());
+        if ($this->crawlerRemedio->filter('#dosage-collapse > div')->count()) {
+            return trim($this->crawlerRemedio->filter('#dosage-collapse > div')->html());
         }
         return null;
     }
 
     private function getParaQueServe() 
     {
-        if ($this->crawler->filter('#indication-collapse > div > p:nth-child(1)')->eq(0)->count()) {
-            return strip_tags(trim($this->crawler->filter('#indication-collapse > div > p:nth-child(1)')->eq(0)->html()));
+        if ($this->crawlerRemedio->filter('#indication-collapse > div > p:nth-child(1)')->count()) {
+            return strip_tags(trim($this->crawlerRemedio->filter('#indication-collapse > div > p:nth-child(1)')->html()));
         }
         return null;
     }
 
     private function getNome() 
     {
-        if ($this->crawler->filter('.product-presentation__option-description')->eq(0)->count()) {
-            return strip_tags(trim($this->crawler->filter('.product-presentation__option-description')->eq(0)->html()));
+        if ($this->crawlerRemedio->filter('.product-presentation__option-description')->count()) {
+            return strip_tags(trim($this->crawlerRemedio->filter('.product-presentation__option-description')->html()));
+        }
+        return null;
+    }
+
+    private function getBula()
+    {
+        if ($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->count()) {
+            return strip_tags(trim($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->html()));
         }
         return null;
     }
