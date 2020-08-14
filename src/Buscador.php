@@ -19,7 +19,6 @@ class Buscador
             $form = $this->crawler->filter('.search-autocomplete__form')->form(); 
             $form['termo'] = $codigoBarra;
             
-            // submits the given form
             $this->crawler = $browser->submit($form);
  
         } catch (\Exception $e) {
@@ -53,7 +52,7 @@ class Buscador
             $remedio['armazenagem'] = $this->getArmazenagem();
 
             if (is_null($remedio['nome'])) {
-                $remedio['retorno'] = true;
+                $remedio['retorno'] = false;
             }
         }
         
