@@ -12,6 +12,7 @@ class Buscador
     private $crawlerRemedio;
     private $crawlerBula;
     private $erro = false;
+    private $codigoBarra;
 
     public function __construct(string $codigoBarra)
     {
@@ -23,6 +24,7 @@ class Buscador
             $form['termo'] = $codigoBarra;
             $this->crawlerRemedio = $browser->submit($form);
             $this->crawlerBula = $browser->request('GET', substr($this->crawlerRemedio->getUri(), 0, -1) . 'bula');
+            $this->codigoBarra = $codigoBarra;
  
         } catch (\Exception $e) {
             $this->erro = true;
@@ -47,6 +49,7 @@ class Buscador
             $remedio['retorno'] = false;
         } else {
             $remedio['retorno'] = true;
+            $remedio['codigoBarra'] = $this->codigoBarra;
             $remedio['nome'] = $this->getNome();
             $remedio['paraQueServe'] = $this->getParaQueServe();
             $remedio['comoUsar'] = $this->getComoUsar();
