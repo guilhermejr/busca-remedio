@@ -2,28 +2,29 @@
 
 namespace BuscaRemedio;
 
-use Symfony\Component\BrowserKit\HttpBrowser;
-use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Component\DomCrawler\Crawler;
+use Facebook\WebDriver\Remote\DesiredCapabilities;
+use Facebook\WebDriver\Remote\RemoteWebDriver;
+use Facebook\WebDriver\WebDriverBy;
 
 class Buscador
 {
 
-    private $crawlerRemedio;
-    private $crawlerBula;
+    private $driver;
     private $erro = false;
     private $codigoBarra;
 
     public function __construct(string $codigoBarra)
     {
+
         try {
             
-            $browser = new HttpBrowser(HttpClient::create());
-            $this->crawlerRemedio = $browser->request('GET', 'https://consultaremedios.com.br');
-            $form = $this->crawlerRemedio->filter('.search-autocomplete__form')->form(); 
-            $form['termo'] = $codigoBarra;
-            $this->crawlerRemedio = $browser->submit($form);
-            $this->crawlerBula = $browser->request('GET', substr($this->crawlerRemedio->getUri(), 0, -1) . 'bula');
+            $host = 'http://localhost:4444/wd/hub';
+            $desiredCapabilities = DesiredCapabilities::chrome();
+            $desiredCapabilities->setCapability('acceptSslCerts', false);
+            $desiredCapabilities->setCapability('moz:firefoxOptions', ['args' => ['-headless']]);
+            $this->driver = RemoteWebDriver::create($host, $desiredCapabilities);
+            $this->driver->get('https://consultaremedios.com.br/');
+            $this->driver->findElement(WebDriverBy::name('termo'))->sendKeys($codigoBarra)->submit();
             $this->codigoBarra = $codigoBarra;
  
         } catch (\Exception $e) {
@@ -56,69 +57,64 @@ class Buscador
             $remedio['contraIndicacao'] = $this->getContraIndicacao();
             $remedio['reacoesAdversas'] = $this->getReacoesAdversas();
             $remedio['armazenagem'] = $this->getArmazenagem();
-            $remedio['bula'] = $this->getBula();
 
             if (is_null($remedio['nome'])) {
                 $remedio['retorno'] = false;
             }
         }
         
+        //$this->driver->quit();
         return $remedio;
 
     }
 
     private function getArmazenagem() 
     {
-        if ($this->crawlerRemedio->filter('#storage_care-collapse')->count()) {
-            return trim($this->crawlerRemedio->filter('#storage_care-collapse')->html());
+        $this->driver->findElement(WebDriverBy::cssSelector('.storage_care-link'))->click();
+        if ($this->driver->findElement(WebDriverBy::cssSelector('#storage_care-collapse div'))->getText()) {
+            return $this->driver->findElement(WebDriverBy::cssSelector('#storage_care-collapse div'))->getText();
         }
         return null;
     }
 
     private function getReacoesAdversas() 
     {
-        if ($this->crawlerRemedio->filter('#adverse_reactions-collapse > div')->count()) {
-            return trim($this->crawlerRemedio->filter('#adverse_reactions-collapse > div')->html());
+        $this->driver->findElement(WebDriverBy::cssSelector('.adverse_reactions-link'))->click();
+        if ($this->driver->findElement(WebDriverBy::cssSelector('#adverse_reactions-collapse > div'))->getText()) {
+            return $this->driver->findElement(WebDriverBy::cssSelector('#adverse_reactions-collapse > div'))->getText();
         }
         return null;
     }
 
     private function getContraIndicacao() 
     {
-        if ($this->crawlerRemedio->filter('#contraindication-collapse > div')->count()) {
-            return trim($this->crawlerRemedio->filter('#contraindication-collapse > div')->html());
+        if ($this->driver->findElement(WebDriverBy::cssSelector('#contraindication-collapse > div'))->getText()) {
+            return $this->driver->findElement(WebDriverBy::cssSelector('#contraindication-collapse > div'))->getText();
         }
         return null;
     }
 
     private function getComoUsar() 
     {
-        if ($this->crawlerRemedio->filter('#dosage-collapse > div')->count()) {
-            return trim($this->crawlerRemedio->filter('#dosage-collapse > div')->html());
+        $this->driver->findElement(WebDriverBy::cssSelector('.dosage-link.collapsed'))->click();
+        if ($this->driver->findElement(WebDriverBy::cssSelector('#dosage-collapse'))->getText()) {
+            return $this->driver->findElement(WebDriverBy::cssSelector('#dosage-collapse'))->getText();
         }
         return null;
     }
 
     private function getParaQueServe() 
     {
-        if ($this->crawlerRemedio->filter('#indication-collapse > div > p:nth-child(1)')->count()) {
-            return strip_tags(trim($this->crawlerRemedio->filter('#indication-collapse > div > p:nth-child(1)')->html()));
+        if ($this->driver->findElement(WebDriverBy::cssSelector('#indication-collapse > div > p:nth-child(1)'))->getText()) {
+            return $this->driver->findElement(WebDriverBy::cssSelector('#indication-collapse > div > p:nth-child(1)'))->getText();
         }
         return null;
     }
 
     private function getNome() 
     {
-        if ($this->crawlerRemedio->filter('.product-presentation__option-description')->count()) {
-            return strip_tags(trim($this->crawlerRemedio->filter('.product-presentation__option-description')->html()));
-        }
-        return null;
-    }
-
-    private function getBula()
-    {
-        if ($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->count()) {
-            return strip_tags(trim($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->html()));
+        if ($this->driver->findElement(WebDriverBy::cssSelector('span.product-presentation__option-description'))->getText()) {
+            return $this->driver->findElement(WebDriverBy::cssSelector('span.product-presentation__option-description'))->getText();
         }
         return null;
     }
