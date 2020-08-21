@@ -63,7 +63,7 @@ class Buscador
             }
         }
         
-        //$this->driver->quit();
+        $this->driver->quit();
         return $remedio;
 
     }
