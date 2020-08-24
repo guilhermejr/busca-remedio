@@ -5,6 +5,7 @@ namespace BuscaRemedio;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Facebook\WebDriver\WebDriverBy;
+use Symfony\Component\DomCrawler\Crawler;
 
 class Buscador
 {
@@ -12,12 +13,15 @@ class Buscador
     private $driver;
     private $erro = false;
     private $codigoBarra;
+    private $crawlerRemedio;
+    private $crawlerBula;
 
     public function __construct(string $codigoBarra)
     {
 
         try {
             
+            // --- Acessa a página inicial e fas a busca pelo código de barra ---
             $host = 'http://localhost:4444/wd/hub';
             $desiredCapabilities = DesiredCapabilities::chrome();
             $desiredCapabilities->setCapability('acceptSslCerts', false);
@@ -25,6 +29,16 @@ class Buscador
             $this->driver = RemoteWebDriver::create($host, $desiredCapabilities);
             $this->driver->get('https://consultaremedios.com.br/');
             $this->driver->findElement(WebDriverBy::name('termo'))->sendKeys($codigoBarra)->submit();
+
+            // --- Crawler da página do remédio ---
+            $this->driver->get($this->driver->getCurrentURL());
+            $this->crawlerRemedio = new Crawler($this->driver->getPageSource());
+            
+            // --- Crawler da bula ---
+            $this->driver->get(substr($this->driver->getCurrentURL(), 0, -1) . 'bula');
+            $this->crawlerBula = new Crawler($this->driver->getPageSource());
+
+            // --- Código de barra ---
             $this->codigoBarra = $codigoBarra;
  
         } catch (\Exception $e) {
@@ -33,6 +47,7 @@ class Buscador
         
     }
 
+    // --- getJSON ------------------------------------------------------------
     public function getJSON(bool $cli = false) : string
     {
         if ($cli) {
@@ -42,6 +57,8 @@ class Buscador
         }
     }
 
+
+    // --- getArray -----------------------------------------------------------
     public function getArray() : array
     {
         $remedio = [];
@@ -57,6 +74,7 @@ class Buscador
             $remedio['contraIndicacao'] = $this->getContraIndicacao();
             $remedio['reacoesAdversas'] = $this->getReacoesAdversas();
             $remedio['armazenagem'] = $this->getArmazenagem();
+            $remedio['bula'] = $this->getBula();
 
             if (is_null($remedio['nome'])) {
                 $remedio['retorno'] = false;
@@ -68,53 +86,65 @@ class Buscador
 
     }
 
+    // --- getArmazenagem -----------------------------------------------------
     private function getArmazenagem() 
     {
-        $this->driver->findElement(WebDriverBy::cssSelector('.storage_care-link'))->click();
-        if ($this->driver->findElement(WebDriverBy::cssSelector('#storage_care-collapse div'))->getText()) {
-            return $this->driver->findElement(WebDriverBy::cssSelector('#storage_care-collapse div'))->getText();
+        if ($this->crawlerRemedio->filter('#storage_care-collapse')->count()) {
+            return trim($this->crawlerRemedio->filter('#storage_care-collapse')->html());
         }
         return null;
     }
 
+    // --- getReacoesAdversas -------------------------------------------------
     private function getReacoesAdversas() 
     {
-        $this->driver->findElement(WebDriverBy::cssSelector('.adverse_reactions-link'))->click();
-        if ($this->driver->findElement(WebDriverBy::cssSelector('#adverse_reactions-collapse > div'))->getText()) {
-            return $this->driver->findElement(WebDriverBy::cssSelector('#adverse_reactions-collapse > div'))->getText();
+        if ($this->crawlerRemedio->filter('#adverse_reactions-collapse > div')->count()) {
+            return trim($this->crawlerRemedio->filter('#adverse_reactions-collapse > div')->html());
         }
         return null;
     }
 
+    // --- getContraIndicacao -------------------------------------------------
     private function getContraIndicacao() 
     {
-        if ($this->driver->findElement(WebDriverBy::cssSelector('#contraindication-collapse > div'))->getText()) {
-            return $this->driver->findElement(WebDriverBy::cssSelector('#contraindication-collapse > div'))->getText();
+        if ($this->crawlerRemedio->filter('#contraindication-collapse > div')->count()) {
+            return trim($this->crawlerRemedio->filter('#contraindication-collapse > div')->html());
         }
         return null;
     }
 
+    // --- getComoUsar --------------------------------------------------------
     private function getComoUsar() 
     {
-        $this->driver->findElement(WebDriverBy::cssSelector('.dosage-link.collapsed'))->click();
-        if ($this->driver->findElement(WebDriverBy::cssSelector('#dosage-collapse'))->getText()) {
-            return $this->driver->findElement(WebDriverBy::cssSelector('#dosage-collapse'))->getText();
+        if ($this->crawlerRemedio->filter('#dosage-collapse > div')->count()) {
+            return trim($this->crawlerRemedio->filter('#dosage-collapse > div')->html());
         }
         return null;
     }
 
+    // --- getParaQueServe ----------------------------------------------------
     private function getParaQueServe() 
     {
-        if ($this->driver->findElement(WebDriverBy::cssSelector('#indication-collapse > div > p:nth-child(1)'))->getText()) {
-            return $this->driver->findElement(WebDriverBy::cssSelector('#indication-collapse > div > p:nth-child(1)'))->getText();
+        if ($this->crawlerRemedio->filter('#indication-collapse > div > p:nth-child(1)')->count()) {
+            return strip_tags(trim($this->crawlerRemedio->filter('#indication-collapse > div > p:nth-child(1)')->html()));
         }
         return null;
     }
 
+    // --- getNome ------------------------------------------------------------
     private function getNome() 
     {
-        if ($this->driver->findElement(WebDriverBy::cssSelector('span.product-presentation__option-description'))->getText()) {
-            return $this->driver->findElement(WebDriverBy::cssSelector('span.product-presentation__option-description'))->getText();
+        if ($this->crawlerRemedio->filter('.product-presentation__option-description')->count()) {
+            return strip_tags(trim($this->crawlerRemedio->filter('.product-presentation__option-description')->html()));
+        }
+        return null;
+    }
+
+    // --- getBula ------------------------------------------------------------
+    private function getBula()
+    {
+        if ($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->count()) {
+            return strip_tags(trim($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->html()));
         }
         return null;
     }
