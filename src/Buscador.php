@@ -22,7 +22,7 @@ class Buscador
         try {
             
             // --- Acessa a página inicial e fas a busca pelo código de barra ---
-            $host = 'http://localhost:4444/wd/hub';
+            $host = 'http://selenium:4444/wd/hub';
             $desiredCapabilities = DesiredCapabilities::chrome();
             $desiredCapabilities->setCapability('acceptSslCerts', false);
             $desiredCapabilities->setCapability('moz:firefoxOptions', ['args' => ['-headless']]);
@@ -33,10 +33,6 @@ class Buscador
             // --- Crawler da página do remédio ---
             $this->driver->get($this->driver->getCurrentURL());
             $this->crawlerRemedio = new Crawler($this->driver->getPageSource());
-            
-            // --- Crawler da bula ---
-            $this->driver->get(substr($this->driver->getCurrentURL(), 0, -1) . 'bula');
-            $this->crawlerBula = new Crawler($this->driver->getPageSource());
 
             // --- Código de barra ---
             $this->codigoBarra = $codigoBarra;
@@ -74,7 +70,6 @@ class Buscador
             $remedio['contraIndicacao'] = $this->getContraIndicacao();
             $remedio['reacoesAdversas'] = $this->getReacoesAdversas();
             $remedio['armazenagem'] = $this->getArmazenagem();
-            $remedio['bula'] = $this->getBula();
 
             if (is_null($remedio['nome'])) {
                 $remedio['retorno'] = false;
@@ -136,15 +131,6 @@ class Buscador
     {
         if ($this->crawlerRemedio->filter('.product-presentation__option-description')->count()) {
             return strip_tags(trim($this->crawlerRemedio->filter('.product-presentation__option-description')->html()));
-        }
-        return null;
-    }
-
-    // --- getBula ------------------------------------------------------------
-    private function getBula()
-    {
-        if ($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->count()) {
-            return strip_tags(trim($this->crawlerBula->filter('div.leaflet-content.col-xs-12.col-sm-8.col-sm-offset-2.marginTop-20')->html()));
         }
         return null;
     }
